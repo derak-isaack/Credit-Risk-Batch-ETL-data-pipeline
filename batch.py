@@ -85,7 +85,7 @@ def main():
         batch_size=1000,
     )
 
-    #Wait untill all the pipeline is exceuted before exit. 
+    #Wait untill the whole pipeline is executed before exit to catch any errors. 
     lines.run().wait_until_finish()
     
     #/Uncomment to run single transformations/
