@@ -10,28 +10,80 @@ def main():
 
     lines = Pipeline()
 
-    pt = (
+    possible_defaulters = (
         lines
-        | beam.io.ReadFromText('data/loan.csv', skip_header_lines=True)
-        | beam.Map(lambda line: line.split(','))
+        | "ReadCSVdata" >> beam.io.ReadFromText('data/loan.csv', skip_header_lines=True)
+        | "SeparateThevalues" >> beam.Map(lambda line: line.split(','))
         # | beam.Filter(lambda line: line[4] > '100000')
         #Filter people with a higher risk for defaulting
-        | beam.Filter(lambda line:line[12] == '1')
+        | "FilterPossibleDefaulters" >> beam.Filter(lambda line:line[12] == '1')
         #Filter persons with salary above 5000000
-        | beam.Filter(is_greater_than_threshold, threshold='5000000')
+        | "FilterSalaries" >> beam.Filter(is_greater_than_threshold, threshold='5000000')
         #Group them by city
-        | beam.GroupBy(lambda line: line[9])
-        | beam.Map(print)
+        | "GroupByCity" >> beam.GroupBy(lambda line: line[9])
+        | 'MapToDictionary' >> beam.Map(lambda line: {
+            'ID': int(line[0]),
+            'Salary': int(line[1]),
+            'Age': int(line[2]),
+            'Experience': int(line[3]),
+            'MaritalStatus': line[4],
+            'HousingStatus': line[5],
+            'HasCar': line[6],
+            'Occupation': line[7],
+            'City': line[8],
+            'State': line[9],
+            'yrs_employed': int(line[10]),
+            'house_age': int(line[11]),
+            'risk_level': int(line[12])
+        }
     )
-    # pt | WriteToMySQL(
-    #     host="localhost",
-    #     database="batch_streaming",
-    #     table="stream",
-    #     user="root",
-    #     password="@admin#2024*10",
-    #     port=3306,
-    #     batch_size=1000,
-    # )
+    possible_defaulters | WriteToMySQL(
+        host="localhost",
+        database="batch_streaming",
+        table="possible_defaulters",
+        user="root",
+        password="@admin#2024*10",
+        port=3306,
+        batch_size=1000,
+    )
+    
+    #Define the second transformation pipeline to only include only those who are less likely to default with a risk level of 0.
+    less_possible_defaulters = (
+        lines
+        | "ReadCSVIn text formart" >> beam.io.ReadFromText('data/loan.csv', skip_header_lines=True)
+        | "SeparateThevalues" >> beam.Map(lambda line: line.split(','))
+        # | beam.Filter(lambda line: line[4] > '100000')
+        #Filter people with a less risk of possible defaulting
+        | "FilterLessPossibleDefaulters" beam.Filter(lambda line:line[12] == '0')
+        #Filter persons with salary above 5000000
+        # | beam.Filter(is_greater_than_threshold, threshold='5000000')
+        #Group them by city
+        | "GroupByCity" >> beam.GroupBy(lambda line: line[9])
+        | 'MapToDictionary' >> beam.Map(lambda line: {
+            'ID': int(line[0]),
+            'Salary': int(line[1]),
+            'Age': int(line[2]),
+            'Experience': int(line[3]),
+            'MaritalStatus': line[4],
+            'HousingStatus': line[5],
+            'HasCar': line[6],
+            'Occupation': line[7],
+            'City': line[8],
+            'State': line[9],
+            'yrs_employed': int(line[10]),
+            'house_age': int(line[11]),
+            'risk_level': int(line[12])
+        }
+    )
+    less_possible_defaulters | WriteToMySQL(
+        host="localhost",
+        database="batch_streaming",
+        table="non_defaulters",
+        user="root",
+        password="@admin#2024*10",
+        port=3306,
+        batch_size=1000,
+    )
 
     lines.run()
     
