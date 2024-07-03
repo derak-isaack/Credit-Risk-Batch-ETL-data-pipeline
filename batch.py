@@ -12,26 +12,26 @@ def main():
 
     pt = (
         lines
-        | beam.io.ReadFromText('data/ds_salaries.csv', skip_header_lines=True)
+        | beam.io.ReadFromText('data/loan.csv', skip_header_lines=True)
         | beam.Map(lambda line: line.split(','))
         # | beam.Filter(lambda line: line[4] > '100000')
         #Filter people with a higher risk for defaulting
-        | beam.Filter(lambda line:line[9] == '1')
+        | beam.Filter(lambda line:line[12] == '1')
         #Filter persons with salary above 5000000
         | beam.Filter(is_greater_than_threshold, threshold='5000000')
         #Group them by city
-        | beam.GroupBy(lambda line: line[5])
+        | beam.GroupBy(lambda line: line[9])
         | beam.Map(print)
     )
-    pt | WriteToMySQL(
-        host="localhost",
-        database="batch_streaming",
-        table="stream",
-        user="root",
-        password="@admin#2024*10",
-        port=3306,
-        batch_size=1000,
-    )
+    # pt | WriteToMySQL(
+    #     host="localhost",
+    #     database="batch_streaming",
+    #     table="stream",
+    #     user="root",
+    #     password="@admin#2024*10",
+    #     port=3306,
+    #     batch_size=1000,
+    # )
 
     lines.run()
     
