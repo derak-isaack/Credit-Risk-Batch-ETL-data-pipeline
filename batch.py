@@ -53,12 +53,12 @@ def main():
     less_possible_defaulters = (
         lines
         | "ReadCSVIn text formart" >> beam.io.ReadFromText('data/loan.csv', skip_header_lines=True)
-        | "SeparateThevalues" >> beam.Map(lambda line: line.split(','))
+        | "SeparateTextValues" >> beam.Map(lambda line: line.split(','))
         # Filter people with a less risk of possible defaulting
         | "FilterLessPossibleDefaulters" >> beam.Filter(lambda line: line[12] == '0')
         # Group them by city
-        | "GroupByCity" >> beam.GroupBy(lambda line: line[9])
-        | 'MapToDictionary' >> beam.Map(lambda line: {
+        | "GroupByCity2" >> beam.GroupBy(lambda line: line[9])
+        | 'MapToDictionary2' >> beam.Map(lambda line: {
             'ID': int(line[0]),
             'Salary': int(line[1]),
             'Age': int(line[2]),
