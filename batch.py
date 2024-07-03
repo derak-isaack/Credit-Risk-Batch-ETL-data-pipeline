@@ -4,6 +4,8 @@ from apache_beam.pipeline import Pipeline
 import pprint
 from beam_mysql.connector.io import WriteToMySQL
 
+
+#Define the main function to ensure efficient execution
 def main():
     def is_greater_than_threshold(element, threshold):
         return element[1] > threshold
@@ -35,7 +37,7 @@ def main():
             'yrs_employed': int(line[10]),
             'house_age': int(line[11]),
             'risk_level': int(line[12])
-        }
+        })
     )
     possible_defaulters | WriteToMySQL(
         host="localhost",
@@ -52,13 +54,10 @@ def main():
         lines
         | "ReadCSVIn text formart" >> beam.io.ReadFromText('data/loan.csv', skip_header_lines=True)
         | "SeparateThevalues" >> beam.Map(lambda line: line.split(','))
-        # | beam.Filter(lambda line: line[4] > '100000')
-        #Filter people with a less risk of possible defaulting
-        | "FilterLessPossibleDefaulters" beam.Filter(lambda line:line[12] == '0')
-        #Filter persons with salary above 5000000
-        # | beam.Filter(is_greater_than_threshold, threshold='5000000')
-        #Group them by city
-        | "GroupByCity" >> beam.GroupBy(lambda line: line[9])
+        # Filter people with a less risk of possible defaulting
+        | "FilterLessPossibleDefaulters" >> beam.Filter(lambda line: line[12] == '0')
+        # Group them by city
+        | "GroupByCity" >> beam.GroupBy(lambda line: line[8])
         | 'MapToDictionary' >> beam.Map(lambda line: {
             'ID': int(line[0]),
             'Salary': int(line[1]),
@@ -73,8 +72,9 @@ def main():
             'yrs_employed': int(line[10]),
             'house_age': int(line[11]),
             'risk_level': int(line[12])
-        }
+        })
     )
+    
     less_possible_defaulters | WriteToMySQL(
         host="localhost",
         database="batch_streaming",
@@ -85,7 +85,11 @@ def main():
         batch_size=1000,
     )
 
-    lines.run()
+    #Wait untill all the pipeline is exceuted before exit. 
+    lines.run().wait_until_finish()
+    
+    #/Uncomment to run single transformations/
+    #lines.run()
     
 if __name__ == '__main__':
     main()
