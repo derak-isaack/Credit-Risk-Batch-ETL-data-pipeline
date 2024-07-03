@@ -20,5 +20,7 @@ for result in cursor.execute(tables, multi=True):
         print(f"Selected {result.rowcount} row(s)")
     else:
         print(f"Affected {result.rowcount} row(s)")
+        
+cursor.close()
 
 
