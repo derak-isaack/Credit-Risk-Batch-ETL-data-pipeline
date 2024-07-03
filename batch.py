@@ -57,7 +57,7 @@ def main():
         # Filter people with a less risk of possible defaulting
         | "FilterLessPossibleDefaulters" >> beam.Filter(lambda line: line[12] == '0')
         # Group them by city
-        | "GroupByCity" >> beam.GroupBy(lambda line: line[8])
+        | "GroupByCity" >> beam.GroupBy(lambda line: line[9])
         | 'MapToDictionary' >> beam.Map(lambda line: {
             'ID': int(line[0]),
             'Salary': int(line[1]),
