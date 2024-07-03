@@ -39,7 +39,7 @@ def main():
             'risk_level': int(line[12])
         })
     )
-    possible_defaulters | WriteToMySQL(
+    possible_defaulters | "WriteDefaultersToMySQL" >> WriteToMySQL(
         host="localhost",
         database="batch_streaming",
         table="possible_defaulters",
@@ -75,7 +75,7 @@ def main():
         })
     )
     
-    less_possible_defaulters | WriteToMySQL(
+    less_possible_defaulters | "WriteNonDefaultersToMySQL" >> WriteToMySQL(
         host="localhost",
         database="batch_streaming",
         table="non_defaulters",
