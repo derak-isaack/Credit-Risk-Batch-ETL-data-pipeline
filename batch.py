@@ -9,21 +9,10 @@ from beam_mysql.connector.io import WriteToMySQL
 def main():
     def is_greater_than_threshold(element, threshold):
         return element[1] > threshold
-
-    lines = Pipeline()
-
-    possible_defaulters = (
-        lines
-        | "ReadCSVdata" >> beam.io.ReadFromText('data/loan.csv', skip_header_lines=True)
-        | "SeparateThevalues" >> beam.Map(lambda line: line.split(','))
-        # | beam.Filter(lambda line: line[4] > '100000')
-        #Filter people with a higher risk for defaulting
-        | "FilterPossibleDefaulters" >> beam.Filter(lambda line:line[12] == '1')
-        #Filter persons with salary above 5000000
-        | "FilterSalaries" >> beam.Filter(is_greater_than_threshold, threshold='5000000')
-        #Group them by city
-        | "GroupByCity" >> beam.GroupBy(lambda line: line[9])
-        | 'MapToDictionary' >> beam.Map(lambda line: {
+    
+    #Define a function to FlatMap the groupoed values.
+    def process_line(line):
+        return {
             'ID': int(line[0]),
             'Salary': int(line[1]),
             'Age': int(line[2]),
@@ -37,8 +26,22 @@ def main():
             'yrs_employed': int(line[10]),
             'house_age': int(line[11]),
             'risk_level': int(line[12])
-        })
-    )
+        }
+
+    lines = Pipeline()
+
+    possible_defaulters = (
+        lines
+        | "ReadCSVdata" >> beam.io.ReadFromText('data/loan.csv', skip_header_lines=True)
+        | "SeparateThevalues" >> beam.Map(lambda line: line.split(','))
+        # | beam.Filter(lambda line: line[4] > '100000')
+        #Filter people with a higher risk for defaulting
+        | "FilterPossibleDefaulters" >> beam.Filter(lambda line:line[12] == '1')
+        #Filter persons with salary above 5000000
+        | "FilterSalaries" >> beam.Filter(is_greater_than_threshold, threshold='5000000')
+        #Group them by city
+        | "MapToDictionaryDefaulters" >> beam.Map(process_line))
+    
     possible_defaulters | "WriteDefaultersToMySQL" >> WriteToMySQL(
         host="localhost",
         database="batch_streaming",
@@ -57,23 +60,9 @@ def main():
         # Filter people with a less risk of possible defaulting
         | "FilterLessPossibleDefaulters" >> beam.Filter(lambda line: line[12] == '0')
         # Group them by city
-        | "GroupByCity2" >> beam.GroupBy(lambda line: line[9])
-        | 'MapToDictionary2' >> beam.Map(lambda line: {
-            'ID': int(line[0]),
-            'Salary': int(line[1]),
-            'Age': int(line[2]),
-            'Experience': int(line[3]),
-            'MaritalStatus': line[4],
-            'HousingStatus': line[5],
-            'HasCar': line[6],
-            'Occupation': line[7],
-            'City': line[8],
-            'State': line[9],
-            'yrs_employed': int(line[10]),
-            'house_age': int(line[11]),
-            'risk_level': int(line[12])
-        })
-    )
+        | "MapToDictionaryLessDefaulters" >> beam.Map(process_line))
+        
+    
     
     less_possible_defaulters | "WriteNonDefaultersToMySQL" >> WriteToMySQL(
         host="localhost",
@@ -82,7 +71,7 @@ def main():
         user="root",
         password="@admin#2024*10",
         port=3306,
-        batch_size=1000,
+        batch_size=100,
     )
 
     #Wait untill the whole pipeline is executed before exit to catch any errors. 
