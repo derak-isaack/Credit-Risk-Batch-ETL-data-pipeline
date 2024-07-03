@@ -6,7 +6,7 @@ from beam_mysql.connector.io import WriteToMySQL
 
 def main():
     def is_greater_than_threshold(element, threshold):
-        return element[4] > threshold
+        return element[1] > threshold
 
     lines = Pipeline()
 
@@ -15,11 +15,12 @@ def main():
         | beam.io.ReadFromText('data/ds_salaries.csv', skip_header_lines=True)
         | beam.Map(lambda line: line.split(','))
         # | beam.Filter(lambda line: line[4] > '100000')
-        | beam.Filter(lambda line:line[0] == '2021')
-        | beam.Filter(is_greater_than_threshold, threshold='100000')
-        | beam.GroupBy(lambda line: line[1])
-        # | beam.Map(lambda group: (group[0], list(group[1])))
-        # | beam.io.WriteToText('data/beam_output', file_name_suffix='.csv')
+        #Filter people with a higher risk for defaulting
+        | beam.Filter(lambda line:line[9] == '1')
+        #Filter persons with salary above 5000000
+        | beam.Filter(is_greater_than_threshold, threshold='5000000')
+        #Group them by city
+        | beam.GroupBy(lambda line: line[5])
         | beam.Map(print)
     )
     pt | WriteToMySQL(
